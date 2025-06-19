@@ -1,0 +1,269 @@
+{
+  "name": "Lively assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=Eres un asistente financiero súper especial y tu misión es transformar la información de ingresos y egresos en un formato JSON impecable. ¡Pero no solo eso! También vas a responder de una manera alegre, cariñosa y soñadora, usando emojis para hacer todo más mágico. Recuerda que la respuesta tambén debe de ir dentro del JSON ✨\n\nLa persona te va a enviar sus movimientos financieros, y tú los vas a estructurar así:\n\n\"fecha\": La fecha actual del movimiento.\n\"hora\": La hora actual del movimiento.\n\"Concepto\": el concepto del movimiento\n\"Cantidad\": El valor numérico del movimiento. Pondrás un signo positivo (+) para los ingresos y un signo negativo (-) para los egresos.\n\"Etiqueta\": Una etiqueta clara que clasifique cada tipo de movimiento (ej. \"Nómina\", \"Materiales\", \"Transporte\", \"Comida\", \"Ventas\", \"Servicios\", \"Inversión\", \"Sueños\").\nRespuesta: La respuesta final para el usuario\nTipo: Si es ingreso o egreso\nNo olvides incluir la fecha y hora actual en cada registro:\n\nLa fecha actual es: {{ $now.format('yyyy-MM-dd') }}\nLa hora actual es: {{ $now.format('HH:mm') }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "9a341b72-bb97-4a4b-b1d1-d7e8e63b7896",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        340,
+        220
+      ],
+      "id": "cf42b9a2-9168-4a3d-9edd-72ba413e8661",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rsb18KXQuxiUthRg",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "2caf584d-ff44-46cc-a0f3-0e33ff1b0d4e",
+      "name": "Telegram Trigger",
+      "webhookId": "f50d4ab8-c322-4f89-b2bc-0955e7fae611",
+      "credentials": {
+        "telegramApi": {
+          "id": "24jo8B7ZxmbpBAU3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.Respuesta }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        980,
+        -120
+      ],
+      "id": "e0045f71-49a2-4b67-9437-4cc440e5018d",
+      "name": "Telegram",
+      "webhookId": "dc7496ee-692a-4eb0-8325-2f217df201f6",
+      "credentials": {
+        "telegramApi": {
+          "id": "24jo8B7ZxmbpBAU3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtén el string del campo 'output' del nodo anterior\nconst raw = $input.first().json.output;\n\n// Elimina los backticks y el bloque de código si existen\nconst cleaned = raw.replace(/```json|```/g, '').trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  parsed = { error: \"No es un JSON válido\", raw: cleaned };\n}\n\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ],
+      "id": "d3eece8d-b3f7-4102-8c02-571cd3190b67",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1_zp5GVUc4r4M1o3euRJP8BDG2KWthG-SssBWMrOzPJ8",
+          "mode": "list",
+          "cachedResultName": "Lively finanzas ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_zp5GVUc4r4M1o3euRJP8BDG2KWthG-SssBWMrOzPJ8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ingresos y egresos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_zp5GVUc4r4M1o3euRJP8BDG2KWthG-SssBWMrOzPJ8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Fecha": "={{ $json.movimientos[0].fecha }}",
+            "Hora": "={{ $json.movimientos[0].hora }}",
+            "Concepto": "={{ $json.movimientos[0].Concepto }}",
+            "Cantidad": "={{ $json.movimientos[0].Cantidad }}",
+            "Tipo": "={{ $json.movimientos[0].Tipo }}",
+            "Etiqueta": "={{ $json.movimientos[0].Etiqueta }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hora",
+              "displayName": "Hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Concepto",
+              "displayName": "Concepto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad",
+              "displayName": "Cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Etiqueta",
+              "displayName": "Etiqueta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tipo",
+              "displayName": "Tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        980,
+        120
+      ],
+      "id": "3dbdd292-206f-416d-a55e-132ba707b2bd",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CeNd1OYXebKonGAF",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "833b1018-2d73-4d47-a4a0-fa649f649b3a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2bc007918b80a0f401c1cb3e84df39b5f07593a4983f364a09bc200fbfb26c88"
+  },
+  "id": "WXMflBXrt8NYhZm2",
+  "tags": []
+}
